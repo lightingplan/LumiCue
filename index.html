@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#101216">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LumiCue">
+<title>LumiCue - 照明キューシート</title>
+<style>
+:root{--bg:#101216;--panel:#191d24;--panel2:#222833;--line:#303744;--text:#f3f5f8;--muted:#a3adbb;--accent:#a78bfa;--accent2:#7c5ce0;--danger:#ef6464}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+button,input,select,textarea{font:inherit}
+button{min-height:40px;touch-action:manipulation;cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:9px;padding:8px 12px}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent2);border-color:var(--accent2)}
+button.danger{color:#ffaaaa}
+header{height:64px;padding-top:env(safe-area-inset-top);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 22px;background:#14171d;position:sticky;top:0;z-index:3}
+.logo{font-size:20px;font-weight:800;letter-spacing:.4px}.logo span{color:var(--accent)}
+main{max-width:1120px;margin:0 auto;padding:26px 20px 60px}
+.topline{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:22px;flex-wrap:wrap}
+h1{font-size:25px;margin:0 0 5px}h2{font-size:18px;margin:0 0 14px}.sub{color:var(--muted);font-size:13px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.song-list{display:flex;flex-direction:column;gap:8px}
+.song-item{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px}
+.song-item:hover{border-color:var(--accent)}
+.song-item.is-event{background:#151820;border-style:dashed}
+.song-main{flex:1;cursor:pointer;display:flex;align-items:center;gap:12px;min-width:0}
+.song-main strong{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badge-event{background:#2d2645;color:#d8ccff;font-size:11px;padding:3px 8px;border-radius:6px;white-space:nowrap}
+.project{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 42px 16px 16px;cursor:pointer;min-height:110px}
+.project:hover{border-color:var(--accent)}.project strong{display:block;font-size:16px;margin-bottom:8px}
+.project-del{position:absolute;top:10px;right:10px;min-height:auto;padding:4px 9px;font-size:13px;background:transparent;border-color:transparent;color:var(--muted)}
+.project-del:hover{background:#2a1b20;border-color:var(--danger);color:#ffaaaa}
+input,select{width:100%;background:#11151b;border:1px solid var(--line);color:var(--text);border-radius:8px;padding:10px}
+input:focus,select:focus{outline:1px solid var(--accent);border-color:var(--accent)}
+.row{display:flex;gap:10px;align-items:center}.row>*{flex:1}
+.crumb{color:var(--muted);font-size:13px;margin-bottom:18px}.crumb a{color:var(--accent);cursor:pointer}
+.section-list{display:flex;flex-direction:column;gap:9px}
+.section{display:grid;grid-template-columns:42px minmax(120px, .8fr) minmax(180px, 1.5fr) auto;gap:9px;align-items:center;background:#141820;border:1px solid var(--line);padding:10px;border-radius:10px}
+.num{color:var(--muted);font-size:12px;text-align:center}.section input{min-width:0}
+.actions{display:flex;gap:5px}.actions button{padding:6px 9px;min-height:36px}
+.empty{padding:30px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:12px}
+.hidden{display:none!important}
+.tag{display:inline-block;background:#30294a;color:#d8ccff;padding:4px 8px;border-radius:20px;font-size:11px;margin:3px 3px 0 0}
+footer{color:var(--muted);font-size:12px;text-align:center;margin-top:28px}
+
+/* 全体キューシート（イントロ：Saw 形式） */
+.full-sheet-paper{background:#ffffff;color:#111111;padding:36px 42px;border-radius:10px;font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif;line-height:1.75;max-width:680px;margin:0 auto;box-shadow:0 10px 30px #0006}
+.fs-header{border-bottom:1px solid #ccc;padding-bottom:10px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:baseline}
+.fs-header h2{margin:0;font-size:18px;color:#111}
+.fs-block{margin-bottom:24px;break-inside:avoid}
+.fs-song-title{font-size:17px;font-weight:700;margin-bottom:6px;padding-left:8px;border-left:4px solid #7c5ce0}
+.fs-cue-list{padding-left:12px}
+.fs-cue-line{font-size:15px;margin:2px 0}
+.fs-cue-colon{color:#666;margin:0 2px}
+.fs-cue-light{font-weight:600}
+.fs-event{font-size:16px;font-weight:600;margin:20px 0;padding:4px 10px;background:#f3f4f6;border-radius:6px;display:inline-block}
+
+@media(max-width:650px){
+  header{padding:0 14px}main{padding:18px 12px}
+  .section{grid-template-columns:28px 1fr}
+  .section .light-input{grid-column:2}.section .actions{grid-column:2}.section .num{grid-row:1/3}
+  .full-sheet-paper{padding:22px 18px}
+}
+@media print{
+  body{background:white;color:#111}
+  header,.no-print,footer,.crumb,.topline{display:none!important}
+  main{max-width:none;padding:0;margin:0}
+  .panel,.section{background:white;color:#111;border:1px solid #bbb;break-inside:avoid}
+  .section input{background:white;color:#111;border:0;padding:4px}
+  .section{grid-template-columns:35px 1fr 2fr}
+  .section .actions{display:none}
+  .full-sheet-paper{box-shadow:none;padding:0;max-width:none;margin:0}
+  .fs-event{background:transparent;border:1px solid #999}
+}
+</style>
+</head>
+<body>
+<header><div class="logo">Lumi<span>Cue</span></div><div class="sub">LIGHTING CUE SHEET</div></header>
+
+<!-- 汎用名前入力ダイアログ -->
+<div id="nameDialog" class="hidden" style="position:fixed;inset:0;background:#000a;z-index:10;align-items:center;justify-content:center;padding:18px">
+  <div class="panel" style="width:min(420px,100%);margin:0;box-shadow:0 18px 60px #0008">
+    <h2 id="dialogTitle">名前を入力</h2>
+    <input id="dialogInput" placeholder="名前を入力してください" autocomplete="off">
+    <div id="eventPresets" class="hidden" style="margin-top:10px">
+      <div class="sub" style="margin-bottom:6px">クイック選択：</div>
+      <div class="toolbar">
+        <button type="button" onclick="$('dialogInput').value='暗転'">暗転</button>
+        <button type="button" onclick="$('dialogInput').value='MC'">MC</button>
+        <button type="button" onclick="$('dialogInput').value='換気・休憩'">換気・休憩</button>
+        <button type="button" onclick="$('dialogInput').value='アンコール'">アンコール</button>
+      </div>
+    </div>
+    <div class="toolbar" style="justify-content:flex-end;margin-top:14px">
+      <button onclick="closeNameDialog()">キャンセル</button>
+      <button class="primary" onclick="submitNameDialog()">決定</button>
+    </div>
+  </div>
+</div>
+
+<!-- 一括追加ダイアログ -->
+<div id="bulkSongDialog" class="hidden" style="position:fixed;inset:0;background:#000a;z-index:11;align-items:center;justify-content:center;padding:18px">
+  <div class="panel" style="width:min(520px,100%);margin:0;box-shadow:0 18px 60px #0008">
+    <h2>セットリストをまとめて追加</h2>
+    <div class="sub">1行に1項目ずつ入力してください。「暗転」「MC」と入力すると曲間項目として登録されます。</div>
+    <textarea id="bulkSongInput" rows="9" placeholder="例：&#10;曲名 1&#10;曲名 2&#10;暗転&#10;MC&#10;曲名 3" style="width:100%;margin-top:10px;background:#11151b;border:1px solid var(--line);color:var(--text);border-radius:8px;padding:10px;resize:vertical"></textarea>
+    <div class="toolbar" style="justify-content:flex-end;margin-top:14px">
+      <button onclick="closeBulkSongDialog()">キャンセル</button>
+      <button class="primary" onclick="submitBulkSongs()">まとめて追加</button>
+    </div>
+  </div>
+</div>
+
+<main>
+  <!-- 1. ホーム（プロジェクト一覧） -->
+  <div id="home">
+    <div class="topline">
+      <div><h1>プロジェクト</h1><div class="sub">公演ごとに照明キューシートを管理</div></div>
+      <button class="primary" onclick="addProject()">＋ 新規プロジェクト</button>
+    </div>
+    <div id="projectList" class="grid"></div>
+  </div>
+
+  <!-- 2. プロジェクト詳細（セットリスト構成） -->
+  <div id="projectView" class="hidden">
+    <div class="crumb"><a onclick="goHome()">プロジェクト一覧</a> / <span id="projectCrumb"></span></div>
+    <div class="topline">
+      <div><h1 id="projectTitle"></h1><div class="sub">楽曲のキュー編集や、セットリスト全体の進行表を作成</div></div>
+      <div class="toolbar no-print">
+        <button class="primary" onclick="openFullSheet()">📄 全体キューシート出力</button>
+        <button onclick="renameProject()">名前変更</button>
+        <button class="danger" onclick="deleteProject()">プロジェクト削除</button>
+      </div>
+    </div>
+    <div class="toolbar no-print" style="margin-bottom:14px">
+      <button class="primary" onclick="addSong()">＋ 曲を追加</button>
+      <button onclick="addEventItem()">＋ 暗転 / MC 等を追加</button>
+      <button onclick="openBulkSongDialog()">まとめて追加</button>
+    </div>
+    <div id="songList" class="song-list"></div>
+  </div>
+
+  <!-- 3. 全体キューシート表示 -->
+  <div id="fullSheetView" class="hidden">
+    <div class="crumb no-print"><a onclick="goHome()">プロジェクト一覧</a> / <a onclick="backToProject()" id="fullSheetProjectCrumb"></a> / <span>全体キューシート</span></div>
+    <div class="topline no-print">
+      <div><h1>全体キューシート</h1><div class="sub">セットリスト全体の進行・照明キュー一覧</div></div>
+      <div class="toolbar">
+        <button onclick="copyFullSheetText()">📋 テキストコピー</button>
+        <button class="primary" onclick="window.print()">🖨️ PDF・印刷</button>
+        <button onclick="backToProject()">戻る</button>
+      </div>
+    </div>
+    <div id="fullSheetPaper" class="full-sheet-paper"></div>
+  </div>
+
+  <!-- 4. 個別楽曲のキュー編集 -->
+  <div id="sheetView" class="hidden">
+    <div class="crumb"><a onclick="goHome()">プロジェクト一覧</a> / <a onclick="backToProject()" id="sheetProjectCrumb"></a> / <span id="songCrumb"></span></div>
+    <div class="topline">
+      <div><h1 id="songTitle"></h1><div class="sub">セクションごとの照明内容を入力</div></div>
+      <div class="toolbar no-print">
+        <button onclick="renameSong()">曲名変更</button>
+        <button class="danger" onclick="deleteSong()">曲を削除</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="topline">
+        <div><h2 style="margin:0">キューシート</h2><div class="sub">例：イントロ → CUT ／ Aメロ → D ／ Bメロ → Saw</div></div>
+        <div class="toolbar no-print">
+          <button onclick="window.print()">この曲だけ印刷</button>
+          <button onclick="exportCSV()">CSV出力</button>
+        </div>
+      </div>
+      <div id="sectionList" class="section-list"></div>
+      <div class="toolbar no-print" style="margin-top:14px">
+        <button class="primary" onclick="addSection()">＋ セクション追加</button>
+        <button onclick="addDefaultSections()">基本構成を追加（イントロ〜サビ）</button>
+      </div>
+    </div>
+    <div class="panel no-print">
+      <h2>照明パターン登録</h2>
+      <div class="sub">よく使う略称を登録すると、キュー入力時に選択できます。</div>
+      <div class="row" style="margin-top:10px">
+        <input id="newPreset" placeholder="例：CUT、D、Saw、BLINDER">
+        <button class="primary" style="flex:0 0 auto" onclick="addPreset()">登録</button>
+      </div>
+      <div id="presetList" style="margin-top:8px"></div>
+    </div>
+  </div>
+
+  <footer>データはこのブラウザ内に自動保存されます。別の端末・ブラウザとは自動同期されません。</footer>
+</main>
+
+<script>
+const KEY='lumicue_v2';
+let data=JSON.parse(localStorage.getItem(KEY)||'null')||{
+  projects:[],
+  presets:['CUT','D','Saw','BLINDER','STROBE','MOVING','WHITE','COLOR','BLACK OUT']
+};
+let projectId=null,songId=null;
+const $=id=>document.getElementById(id);
+const uid=()=>Math.random().toString(36).slice(2,10);
+function save(){localStorage.setItem(KEY,JSON.stringify(data))}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function currentProject(){return data.projects.find(p=>p.id===projectId)}
+function currentSong(){return currentProject()?.songs.find(s=>s.id===songId)}
+function show(view){['home','projectView','sheetView','fullSheetView'].forEach(v=>$(v).classList.toggle('hidden',v!==view))}
+function goHome(){projectId=null;songId=null;renderProjects();show('home')}
+function backToProject(){songId=null;renderSongs();show('projectView')}
+
+let dialogAction=null;
+function openNameDialog(title,placeholder,initial,action,showEventBtns=false){
+  $('dialogTitle').textContent=title;
+  $('dialogInput').placeholder=placeholder;
+  $('dialogInput').value=initial||'';
+  $('eventPresets').classList.toggle('hidden',!showEventBtns);
+  dialogAction=action;
+  $('nameDialog').classList.remove('hidden');
+  $('nameDialog').style.display='flex';
+  setTimeout(()=>$('dialogInput').focus(),0);
+}
+function closeNameDialog(){$('nameDialog').classList.add('hidden');$('nameDialog').style.display='none';dialogAction=null}
+function submitNameDialog(){let value=$('dialogInput').value.trim();if(!value)return;let action=dialogAction;closeNameDialog();if(action)action(value)}
+
+function addProject(){
+  openNameDialog('新規プロジェクト','例：学園祭ライブ','新しい公演',name=>{
+    let p={id:uid(),name,songs:[]};
+    data.projects.push(p);save();renderProjects();openProject(p.id);
+  });
+}
+function renderProjects(){
+  let el=$('projectList');
+  if(!data.projects.length){
+    el.innerHTML='<div class="empty">プロジェクトはまだありません。<br>「新規プロジェクト」から作成してください。</div>';
+    return;
+  }
+  el.innerHTML=data.projects.map(p=>{
+    let songCount=p.songs.filter(s=>s.type!=='event').length;
+    return `
+      <div class="project" onclick="openProject('${p.id}')">
+        <button class="project-del" title="プロジェクトを削除" onclick="event.stopPropagation();deleteProjectById('${p.id}')">×</button>
+        <strong>${esc(p.name)}</strong>
+        <span class="sub">${songCount} 曲（全 ${p.songs.length} 項目）</span>
+      </div>`;
+  }).join('');
+}
+function openProject(id){projectId=id;renderSongs();show('projectView')}
+
+function deleteProjectById(id){
+  let p=data.projects.find(x=>x.id===id);
+  if(!p)return;
+  if(confirm(`プロジェクト「${p.name}」を削除しますか？\n（登録されている曲やキューもすべて消えます）`)){
+    data.projects=data.projects.filter(x=>x.id!==id);
+    save();
+    if(projectId===id)goHome();
+    else renderProjects();
+  }
+}
+
+function renderSongs(){
+  let p=currentProject();if(!p)return;
+  $('projectTitle').textContent=p.name;
+  $('projectCrumb').textContent=p.name;
+  let el=$('songList');
+  if(!p.songs.length){
+    el.innerHTML='<div class="empty">セットリストが空です。<br>「曲を追加」または「暗転 / MC 等を追加」から登録してください。</div>';
+    return;
+  }
+  el.innerHTML=p.songs.map((s,idx)=>{
+    let isEvent=s.type==='event';
+    return `
+      <div class="song-item ${isEvent?'is-event':''}">
+        <div class="song-main" onclick="${isEvent?`renameEvent('${s.id}')`:`openSong('${s.id}')`}">
+          ${isEvent?'<span class="badge-event">進行</span>':''}
+          <strong>${esc(s.name)}</strong>
+          ${!isEvent?`<span class="sub">(${s.sections.length} セクション)</span>`:''}
+        </div>
+        <div class="actions no-print">
+          <button title="上へ" onclick="moveItem('${s.id}',-1)">↑</button>
+          <button title="下へ" onclick="moveItem('${s.id}',1)">↓</button>
+          ${isEvent?`<button class="danger" title="削除" onclick="deleteItem('${s.id}')">×</button>`:''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function moveItem(id,dir){
+  let a=currentProject().songs,i=a.findIndex(x=>x.id===id),j=i+dir;
+  if(j<0||j>=a.length)return;
+  [a[i],a[j]]=[a[j],a[i]];
+  save();renderSongs();
+}
+function deleteItem(id){
+  let p=currentProject();
+  p.songs=p.songs.filter(x=>x.id!==id);
+  save();renderSongs();
+}
+function renameProject(){let p=currentProject();openNameDialog('プロジェクト名を変更','プロジェクト名',p.name,n=>{p.name=n;save();renderSongs()})}
+function deleteProject(){deleteProjectById(projectId)}
+
+function addSong(){
+  openNameDialog('曲を追加','曲名を入力してください','',n=>{
+    let s={id:uid(),type:'song',name:n,sections:[]};
+    currentProject().songs.push(s);save();renderSongs();openSong(s.id);
+  });
+}
+function addEventItem(){
+  openNameDialog('曲間項目を追加','例：暗転、MC','暗転',n=>{
+    currentProject().songs.push({id:uid(),type:'event',name:n,sections:[]});
+    save();renderSongs();
+  },true);
+}
+function renameEvent(id){
+  let item=currentProject().songs.find(x=>x.id===id);
+  openNameDialog('項目名を変更','例：暗転、MC',item.name,n=>{item.name=n;save();renderSongs()},true);
+}
+
+function openBulkSongDialog(){$('bulkSongInput').value='';$('bulkSongDialog').classList.remove('hidden');$('bulkSongDialog').style.display='flex';setTimeout(()=>$('bulkSongInput').focus(),0)}
+function closeBulkSongDialog(){$('bulkSongDialog').classList.add('hidden');$('bulkSongDialog').style.display='none'}
+function submitBulkSongs(){
+  let lines=$('bulkSongInput').value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+  if(!lines.length)return;
+  let p=currentProject();
+  const eventKeywords=['暗転','MC','mc','換気','休憩','アンコール','転換'];
+  lines.forEach(name=>{
+    let isEvent=eventKeywords.some(k=>name===k||name.startsWith('MC'));
+    p.songs.push({id:uid(),type:isEvent?'event':'song',name,sections:[]});
+  });
+  save();closeBulkSongDialog();renderSongs();
+}
+
+/* 全体キューシート生成・表示（「イントロ：Saw」形式） */
+function openFullSheet(){
+  let p=currentProject();if(!p)return;
+  $('fullSheetProjectCrumb').textContent=p.name;
+  let html=`<div class="fs-header"><h2>${esc(p.name)}</h2><span style="font-size:12px;color:#555">LIGHTING CUE SHEET</span></div>`;
+  if(!p.songs.length){
+    html+='<p style="color:#666">セットリストが登録されていません。</p>';
+  }else{
+    html+=p.songs.map(item=>{
+      if(item.type==='event'){
+        return `<div><div class="fs-event">${esc(item.name)}</div></div>`;
+      }
+      let lines=item.sections.length
+        ? item.sections.map(sec=>{
+            let part=esc(sec.part);
+            let light=esc(sec.light);
+            if(!part && !light) return '';
+            if(!light) return `<div class="fs-cue-line">${part}</div>`;
+            return `<div class="fs-cue-line">${part}<span class="fs-cue-colon">：</span><span class="fs-cue-light">${light}</span></div>`;
+          }).join('')
+        : '<div class="fs-cue-line" style="color:#888">（セクション未登録）</div>';
+      return `<div class="fs-block"><div class="fs-song-title">${esc(item.name)}</div><div class="fs-cue-list">${lines}</div></div>`;
+    }).join('');
+  }
+  $('fullSheetPaper').innerHTML=html;
+  show('fullSheetView');
+}
+
+function copyFullSheetText(){
+  let p=currentProject();if(!p)return;
+  let lines=[];
+  p.songs.forEach(item=>{
+    if(item.type==='event'){
+      lines.push(item.name,'');
+    }else{
+      lines.push(`■ ${item.name}`);
+      item.sections.forEach(sec=>{
+        if(sec.part && sec.light){
+          lines.push(`${sec.part}：${sec.light}`);
+        }else if(sec.part || sec.light){
+          lines.push(`${sec.part || sec.light}`);
+        }
+      });
+      lines.push('');
+    }
+  });
+  navigator.clipboard.writeText(lines.join('\n').trim()).then(()=>alert('テキストをクリップボードにコピーしました！'));
+}
+
+/* 個別楽曲編集 */
+function openSong(id){songId=id;renderSheet();show('sheetView')}
+function renameSong(){let s=currentSong();openNameDialog('曲名を変更','曲名',s.name,n=>{s.name=n;save();renderSheet();renderSongs()})}
+function deleteSong(){let s=currentSong();if(confirm(`「${s.name}」を削除しますか？`)){let p=currentProject();p.songs=p.songs.filter(x=>x.id!==s.id);save();backToProject()}}
+function renderSheet(){let p=currentProject(),s=currentSong();if(!s)return;$('sheetProjectCrumb').textContent=p.name;$('songCrumb').textContent=s.name;$('songTitle').textContent=s.name;renderSections();renderPresets()}
+function renderSections(){
+  let s=currentSong(),el=$('sectionList');
+  if(!s.sections.length){el.innerHTML='<div class="empty">セクションがありません。「セクション追加」または「基本構成を追加」から始めましょう。</div>';return}
+  el.innerHTML=s.sections.map((x,i)=>`
+    <div class="section">
+      <div class="num">${String(i+1).padStart(2,'0')}</div>
+      <input aria-label="セクション名" value="${esc(x.part)}" placeholder="例：イントロ" onchange="updateSection('${x.id}','part',this.value)">
+      <input class="light-input" list="presetOptions" value="${esc(x.light)}" placeholder="選択または自由入力（例：CUT / D / Saw）" onchange="updateSection('${x.id}','light',this.value)">
+      <div class="actions no-print">
+        <button title="上へ" onclick="moveSection('${x.id}',-1)">↑</button>
+        <button title="下へ" onclick="moveSection('${x.id}',1)">↓</button>
+        <button title="複製" onclick="duplicateSection('${x.id}')">複製</button>
+        <button class="danger" title="削除" onclick="removeSection('${x.id}')">×</button>
+      </div>
+    </div>`).join('')+'<datalist id="presetOptions">'+data.presets.map(p=>`<option value="${esc(p)}">`).join('')+'</datalist>';
+}
+function addSection(){let s=currentSong();s.sections.push({id:uid(),part:'',light:''});save();renderSections()}
+function addDefaultSections(){
+  let s=currentSong();
+  let defaults=['イントロ','Aメロ','Bメロ','サビ'];
+  defaults.forEach(part=>s.sections.push({id:uid(),part,light:''}));
+  save();renderSections();
+}
+function updateSection(id,key,value){let x=currentSong().sections.find(x=>x.id===id);if(x){x[key]=value;save()}}
+function removeSection(id){let s=currentSong();s.sections=s.sections.filter(x=>x.id!==id);save();renderSections()}
+function duplicateSection(id){let s=currentSong(),i=s.sections.findIndex(x=>x.id===id),x=s.sections[i];s.sections.splice(i+1,0,{...x,id:uid(),part:x.part+'（コピー）'});save();renderSections()}
+function moveSection(id,dir){let a=currentSong().sections,i=a.findIndex(x=>x.id===id),j=i+dir;if(j<0||j>=a.length)return;[a[i],a[j]]=[a[j],a[i]];save();renderSections()}
+function addPreset(){let inp=$('newPreset'),v=inp.value.trim();if(!v)return;if(!data.presets.includes(v))data.presets.push(v);inp.value='';save();renderPresets();renderSections()}
+function renderPresets(){$('presetList').innerHTML=data.presets.map((p,i)=>`<span class="tag">${esc(p)} <button style="padding:0 4px;border:0;background:transparent;color:#d8ccff;min-height:auto" onclick="removePreset(${i})">×</button></span>`).join('')}
+function removePreset(i){data.presets.splice(i,1);save();renderPresets();renderSections()}
+function exportCSV(){let s=currentSong(),p=currentProject();let rows=[['プロジェクト',p.name],['曲名',s.name],[],['No.','セクション','照明内容'],...s.sections.map((x,i)=>[i+1,x.part,x.light])];let csv=rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\r\n');let blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(s.name||'cue-sheet')+'.csv';a.click();URL.revokeObjectURL(a.href)}
+
+$('dialogInput').addEventListener('keydown',e=>{if(e.key==='Enter')submitNameDialog();if(e.key==='Escape')closeNameDialog()});
+$('bulkSongInput').addEventListener('keydown',e=>{if(e.key==='Escape')closeBulkSongDialog()});
+renderProjects();
+</script>
+</body>
+</html>
